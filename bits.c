@@ -234,48 +234,37 @@ int midpointTowardFirst(int x, int y) {
 
 // P12
 int isBetweenEitherOrder(int x, int a, int b) {
-    int ge(int p, int q);  
-    
     int da = a + ~b + 1;
-    int signsDiff = (a ^ b) >> 31;
-    int aGEb = (signsDiff & ~(a >> 31)) | (~signsDiff & ~(da >> 31));
+    int sd = (a ^ b) >> 31;
+    int aGEb = (sd & ~(a >> 31)) | (~sd & ~(da >> 31));
     int mask = ~aGEb;
     int lo = (a & mask) | (b & ~mask);
     int hi = (a & ~mask) | (b & mask);
-    
-    int d1 = x + ~lo + 1;
     int sd1 = (x ^ lo) >> 31;
-    int s1 = d1 >> 31;
-    int sign1 = (sd1 & (x >> 31)) | (~sd1 & s1);
-    int geLo = ~sign1 & 1;
-    
-    int d2 = hi + ~x + 1;
+    int geLo = ~((sd1 & (x >> 31)) | (~sd1 & ((x + ~lo + 1) >> 31))) & 1;
     int sd2 = (hi ^ x) >> 31;
-    int s2 = d2 >> 31;
-    int sign2 = (sd2 & (hi >> 31)) | (~sd2 & s2);
-    int hiGEx = ~sign2 & 1;
+    int hiGEx = ~((sd2 & (hi >> 31)) | (~sd2 & ((hi + ~x + 1) >> 31))) & 1;
     return geLo & hiGEx;
 }
 
 
+
+
+
+
+
 // P13
 int mul5Sat(int x) {
-    int x2 = x << 2;
-    int p = x2 + x;
+    int p = x + (x << 2);
     int sx = x >> 31;
-    int s2 = x2 >> 31;
-    int sp = p >> 31;
-    int bit30 = (x >> 30) & 1;
-    int bit30Mask = (bit30 << 31) >> 31;
-    int posOvf = (~sx & bit30Mask) | (sx ^ s2) | (s2 ^ sp);
-    int bias = 1 << 31;
-    int limit = 0x40 << 24;
-    int xb = x ^ bias;
-    int d = xb + ~limit + 1;
-    int negOvf = sx & (d >> 31);
+    int posLim = (0x19 << 24) + (0x99 << 16) + (0x99 << 8) + 0x99;
+    int lb = (0x66 << 24) + (0x66 << 16) + (0x66 << 8) + 0x66;
+    int dp = x + ~posLim;
+    int dn = (x ^ (1 << 31)) + ~lb;
+    int posOvf = ((~sx & ~(dp >> 31) & !(!dp)) << 31) >> 31;
+    int negOvf = sx & (dn >> 31);
     int ovf = (posOvf | negOvf) >> 31;
-    int sat = (sx << 31) | (~sx & ~(1 << 31));
-    return (ovf & sat) | (~ovf & p);
+    return (ovf & ((sx << 31) | (~sx & ~(1 << 31)))) | (~ovf & p);
 }
 
 
@@ -307,7 +296,7 @@ unsigned floatScaleThreeHalves(unsigned uf) {
         m = frac; e = -126;
         while ((m & 0x800000u) == 0) { m <<= 1; e--; }
     } else {
-        m = frac; e = (int)exp - 127;
+        m = frac; e = exp - 127;
     }
     unsigned mant = (1u << 23) | m;
     unsigned prod = mant + mant + mant;
@@ -332,9 +321,8 @@ unsigned floatScaleThreeHalves(unsigned uf) {
         return sign | dm;
     }
     if (e >= 0xFF) return sign | (0xFFu << 23);
-    return sign | ((unsigned)e << 23) | frac2;
+    return sign | (e << 23) | frac2;
 }
-
 
 // P16
 unsigned floatRoundEven(unsigned uf) {
