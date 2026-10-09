@@ -237,9 +237,10 @@ int isBetweenEitherOrder(int x, int a, int b) {
     int da = a + ~b + 1;
     int sd = (a ^ b) >> 31;
     int aGEb = (sd & ~(a >> 31)) | (~sd & ~(da >> 31));
-    int mask = ~aGEb;
-    int lo = (a & mask) | (b & ~mask);
-    int hi = (a & ~mask) | (b & mask);
+    int n = ~aGEb;
+    int ab = a ^ b;
+    int lo = b ^ (ab & n);
+    int hi = a ^ (ab & n);
     int sd1 = (x ^ lo) >> 31;
     int geLo = ~((sd1 & (x >> 31)) | (~sd1 & ((x + ~lo + 1) >> 31))) & 1;
     int sd2 = (hi ^ x) >> 31;
@@ -252,20 +253,31 @@ int isBetweenEitherOrder(int x, int a, int b) {
 
 
 
-
 // P13
 int mul5Sat(int x) {
-    int p = x + (x << 2);
-    int sx = x >> 31;
-    int posLim = (0x19 << 24) + (0x99 << 16) + (0x99 << 8) + 0x99;
-    int lb = (0x66 << 24) + (0x66 << 16) + (0x66 << 8) + 0x66;
-    int dp = x + ~posLim;
-    int dn = (x ^ (1 << 31)) + ~lb;
-    int posOvf = ((~sx & ~(dp >> 31) & !(!dp)) << 31) >> 31;
-    int negOvf = sx & (dn >> 31);
-    int ovf = (posOvf | negOvf) >> 31;
-    return (ovf & ((sx << 31) | (~sx & ~(1 << 31)))) | (~ovf & p);
+    int fourX = x << 2;
+    int five = fourX + x;
+    int sign = x >> 31;
+
+    int overflow4 = (x >> 29) ^ sign;
+    int overflowAdd = ((fourX ^ five) & (x ^ five)) >> 31;
+    int overflow = !!(overflow4 | overflowAdd);
+
+    int max = ~(1 << 31);
+    int min = 1 << 31;
+    int saturated = (sign & min) | (~sign & max);
+
+    int mask = (~overflow) + 1;
+
+    return (mask & saturated) | (~mask & five);
 }
+
+
+
+
+
+
+
 
 
 
