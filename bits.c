@@ -139,261 +139,282 @@ NOTES:
 #include "bits.h"
 
 // P1
-/* 
- * signMask - return a mask with only the most significant bit set (0x80000000)
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 2
- *   Rating: 1
- */
 int signMask(void) {
-  return 1;
+    return 1 << 31;
 }
 
 // P2
-/* 
- * bitXor - x^y using only ~ and & 
- *   Example: bitXor(4, 5) = 1, bitXor(7, 7) = 0
- *   Legal ops: ~ &
- *   Max ops: 8
- *   Rating: 2
- */
 int bitXor(int x, int y) {
-	return 2;
+    int nx = ~x;
+    int ny = ~y;
+    return ~(nx & ny) & ~(x & y);
 }
 
 // P3
-/*
- * negativePart - return -x if x < 0, otherwise return 0
- *   Examples: negativePart(-10) = 10, negativePart(5) = 0
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 6
- *   Rating: 3
- */
-int negativePart(int x){
-  return 3;
+int negativePart(int x) {
+    int mask = x >> 31;
+    return mask & (~x + 1);
 }
 
-
 // P4
-/*
- * copyByteWithin - copy byte src of x to byte dst, leaving all other bytes unchanged
- *   Bytes are numbered from 0 (least significant) to 3 (most significant).
- *   You can assume 0 <= src <= 3 and 0 <= dst <= 3.
- *   Example: copyByteWithin(0x11223344, 0, 2) = 0x11443344
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 12
- *   Rating: 4
- */
 int copyByteWithin(int x, int src, int dst) {
-  return 4;
+    int sShift = src << 3;
+    int dShift = dst << 3;
+    int byte = (x >> sShift) & 0xFF;
+    int mask = 0xFF << dShift;
+    return (x & ~mask) | (byte << dShift);
 }
 
 // P5
-/* 
- * logicalShift - shift x to the right by n bits, using a logical shift
- *   Can assume that 0 <= n <= 31
- *   Examples: logicalShift(0x87654321,4) = 0x08765432
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 20
- *   Rating: 4
- */
 int logicalShift(int x, int n) {
-  return 5;
+    int amt = 31 + ~n + 1;           // 31 - n
+    int mask = ~((~0 << amt) << 1);
+    return (x >> n) & mask;
 }
 
 // P6
-/*
- * swapNibblePairs - swap the low and high 4 bits within each byte of x
- *   Examples: swapNibblePairs(0xAB) = 0xBA
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 18
- *   Rating: 4
- */
 int swapNibblePairs(int x) {
-  return 6;
+    int m = 0x0F;
+    m = m | (m << 8);
+    m = m | (m << 16);
+    int lo = x & m;
+    int hi = x & (m << 4);
+    return (lo << 4) | ((hi >> 4) & m);
 }
 
 // P7
-/*
- * secondLowestZeroBit - return a mask that marks the position of the second least significant 0 bit
- *   Examples: secondLowestZeroBit(0xFFFFFFFA) = 0x4, secondLowestZeroBit(0x7FFFFFFF) = 0
- *             secondLowestZeroBit(-1) = 0
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 8
- *   Rating: 4
- */
 int secondLowestZeroBit(int x) {
-  return 7;
+    int first = ~x & (x + 1);
+    int x2 = x | first;
+    return ~x2 & (x2 + 1);
 }
 
 // P8
-/*
- * oddParity - return the odd parity bit of x, that is,
- *      when the number of 1s in the binary representation of x is even, then the return 1, otherwise return 0.
- *   Examples: oddParity(5) = 1, oddParity(7) = 0
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 56
- *   Rating: 5
- */
 int oddParity(int x) {
-  return 8;
+    x = x ^ (x >> 16);
+    x = x ^ (x >> 8);
+    x = x ^ (x >> 4);
+    x = x ^ (x >> 2);
+    x = x ^ (x >> 1);
+    return (x & 1) ^ 1;
 }
 
 // P9
-/* 
- * rotateRightBits - rotate x to right by n bits
- *   you can assume n >= 0
- *   Examples: rotateRightBits(0x12345678, 8) = 0x78123456
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 16
- *   Rating: 5
- */
 int rotateRightBits(int x, int n) {
-  return 9;
+    int t = 32 + ~n + 1;            // 32 - n
+    int lowMask = (1 << t) + ~0;
+    return ((x >> n) & lowMask) | (x << t);
 }
 
 // P10
-/*
- * roundEvenPow2 - round nonnegative x to the nearest multiple of 2^n.
- *   If x is exactly halfway between two multiples, choose the multiple whose
- *   quotient by 2^n is even.
- *   You can assume 0 <= x <= 0x3fffffff and 1 <= n <= 16.
- *   Examples: roundEvenPow2(10, 2) = 8, roundEvenPow2(14, 2) = 16
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 24
- *   Rating: 5
- */
 int roundEvenPow2(int x, int n) {
-  return 10;
+    int m = 1 << n;
+    int half = m >> 1;
+    int q = x >> n;
+    int r = x & (m + ~0);
+    int diff = r + ~half + 1;       // r - half
+    int sign = diff >> 31;          // 0 if diff>=0, -1 if diff<0
+    int eq = !diff;
+    int greater = (sign + 1) + ~eq + 1;  // 1 if diff>0
+    int qOdd = q & 1;
+    int up = greater | (eq & qOdd);
+    return (q + up) << n;
 }
 
 // P11
-/* 
- * midpointTowardFirst - return the exact mathematical midpoint (x+y)/2
- *   without overflow. If the exact midpoint lies halfway between two
- *   integers, choose the adjacent integer that is closer to the first
- *   argument x.
- *   Examples: midpointTowardFirst(4, 7) = 5,
- *             midpointTowardFirst(7, 4) = 6
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 32
- *   Rating: 5
- */
 int midpointTowardFirst(int x, int y) {
-  return 11;
+    int base = (x & y) + ((x ^ y) >> 1);
+    int tie = (x ^ y) & 1;
+    int diff = x + ~y + 1;
+    int signsDiff = (x ^ y) >> 31;
+    int addSign = (signsDiff & (x >> 31)) | ((~signsDiff) & (diff >> 31));
+    int xGTy = addSign + 1;
+    return base + (tie & xGTy);
 }
-
 
 // P12
-/* 
- * isBetweenEitherOrder - return 1 when x lies in the inclusive interval whose
- *   endpoints are a and b. The endpoints may be given in either order.
- *   Example: isBetweenEitherOrder(5, 8, 3) = 1.
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 48
- *   Rating: 7
- */
 int isBetweenEitherOrder(int x, int a, int b) {
-  return 12;
+    int ge(int p, int q);  
+    
+    int da = a + ~b + 1;
+    int signsDiff = (a ^ b) >> 31;
+    int aGEb = (signsDiff & ~(a >> 31)) | (~signsDiff & ~(da >> 31));
+    int mask = ~aGEb;
+    int lo = (a & mask) | (b & ~mask);
+    int hi = (a & ~mask) | (b & mask);
+    
+    int d1 = x + ~lo + 1;
+    int sd1 = (x ^ lo) >> 31;
+    int s1 = d1 >> 31;
+    int sign1 = (sd1 & (x >> 31)) | (~sd1 & s1);
+    int geLo = ~sign1 & 1;
+    
+    int d2 = hi + ~x + 1;
+    int sd2 = (hi ^ x) >> 31;
+    int s2 = d2 >> 31;
+    int sign2 = (sd2 & (hi >> 31)) | (~sd2 & s2);
+    int hiGEx = ~sign2 & 1;
+    return geLo & hiGEx;
 }
+
 
 // P13
-/* 
- * mul5Sat - return x*5, and if x*5 overflow, change the result to 
- * INT_MAX(0x7fffffff) or INT_MIN(0x80000000) correspondingly
- *   Examples: mul5Sat(1) = 0x5, mul5Sat(0x40000000) = 0x7fffffff
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 30
- *   Rating: 7
- */
 int mul5Sat(int x) {
-  return 13;
+    int x2 = x << 2;
+    int p = x2 + x;
+    int sx = x >> 31;
+    int s2 = x2 >> 31;
+    int sp = p >> 31;
+    int bit30 = (x >> 30) & 1;
+    int bit30Mask = (bit30 << 31) >> 31;
+    int posOvf = (~sx & bit30Mask) | (sx ^ s2) | (s2 ^ sp);
+    int bias = 1 << 31;
+    int limit = 0x40 << 24;
+    int xb = x ^ bias;
+    int d = xb + ~limit + 1;
+    int negOvf = sx & (d >> 31);
+    int ovf = (posOvf | negOvf) >> 31;
+    int sat = (sx << 31) | (~sx & ~(1 << 31));
+    return (ovf & sat) | (~ovf & p);
 }
 
+
+
+
+
 // P14
-/* 
- * classifyAdd3 - classify the exact mathematical sum x+y+z.
- *   Return 1 if the sum is greater than INT_MAX, -1 if it is less than
- *   INT_MIN, and 0 otherwise. You may not use a wider integer type.
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 52
- *   Rating: 7
- */
 int classifyAdd3(int x, int y, int z) {
-  return 14;
+    int s = x + y;
+    int r = s + z;
+    int ov1neg = ((x & y & ~s)) >> 31;
+    int ov1pos = ((~x & ~y & s)) >> 31;
+    int ov2neg = ((s & z & ~r)) >> 31;
+    int ov2pos = ((~s & ~z & r)) >> 31;
+    int posOvf = (ov1pos & ~ov2neg) | (~ov1neg & ov2pos);
+    int negOvf = (ov1neg & ~ov2pos) | (~ov1pos & ov2neg);
+    return (posOvf & 1) | (negOvf + ~0 + 1);
 }
 
 // P15
-/*
- * floatScaleThreeHalves - Return bit-level equivalent of expression f*3/2 for
- *   floating point argument f.
- *   Both the argument and result are passed as unsigned int's, but
- *   they are to be interpreted as the bit-level representation of
- *   single-precision floating point values.
- *   Use round-to-nearest-even. Preserve the sign of both +0 and -0.
- *   When argument is NaN, return argument.
- *   Legal ops: Any integer / unsigned operations incl. ||, &&. also if, while
- *   Max ops: 60
- *   Rating: 7
- */
 unsigned floatScaleThreeHalves(unsigned uf) {
-  return 15;
+    unsigned sign = uf & 0x80000000u;
+    unsigned exp = (uf >> 23) & 0xFFu;
+    unsigned frac = uf & 0x7FFFFFu;
+    if (exp == 0xFFu) return uf;
+    if (exp == 0u && frac == 0u) return uf;
+    unsigned m; int e;
+    if (exp == 0u) {
+        m = frac; e = -126;
+        while ((m & 0x800000u) == 0) { m <<= 1; e--; }
+    } else {
+        m = frac; e = (int)exp - 127;
+    }
+    unsigned mant = (1u << 23) | m;
+    unsigned prod = mant + mant + mant;
+    e -= 1;
+    unsigned roundBits = 0;
+    while (prod >= (1u << 24)) { roundBits = (roundBits << 1) | (prod & 1u); prod >>= 1; e++; }
+    unsigned frac2 = prod & 0x7FFFFFu;
+    unsigned lsb = frac2 & 1u;
+    unsigned guard = roundBits & 1u;
+    unsigned sticky = roundBits >> 1;
+    if (guard && (lsb || sticky)) frac2++;
+    if (frac2 >= (1u << 23)) { frac2 = 0; e++; }
+    e += 127;
+    if (e <= 0) {
+        if (e < -23) return sign;
+        int shift = 1 - e;
+        unsigned dm = prod >> shift;
+        unsigned lost = prod & ((1u << shift) - 1);
+        unsigned half = 1u << (shift - 1);
+        if ((lost > half) || (lost == half && (dm & 1u))) dm++;
+        if (dm >= (1u << 23)) return sign | (1u << 23) | (dm & 0x7FFFFFu);
+        return sign | dm;
+    }
+    if (e >= 0xFF) return sign | (0xFFu << 23);
+    return sign | ((unsigned)e << 23) | frac2;
 }
 
+
 // P16
-/* 
- * floatRoundEven - round the floating-point value represented by uf to the
- *   nearest integer, with halfway cases rounded to the even integer. Return
- *   the bit-level representation of that integer as a single-precision float.
- *   If rounding produces zero, preserve the input sign; thus a negative
- *   value that rounds to zero returns -0. When uf is NaN or infinity,
- *   return uf unchanged.
- *   Legal ops: Any integer / unsigned operations incl. ||, &&. also if, while
- *   Max ops: 65
- *   Rating: 10
- */
 unsigned floatRoundEven(unsigned uf) {
-  return 16;
+    unsigned sign = uf & 0x80000000u;
+    unsigned exp = (uf >> 23) & 0xFFu;
+    unsigned frac = uf & 0x7FFFFFu;
+    if (exp == 0xFFu) return uf;
+    if (exp == 0u) return sign;
+    int e = (int)exp - 127;
+    if (e < 0) {
+        if (e == -1 && frac > 0u) return sign | (127u << 23);
+        return sign;
+    }
+    if (e >= 23) return uf;
+    int shift = 23 - e;
+    unsigned mask = (1u << shift) - 1;
+    unsigned half = 1u << (shift - 1);
+    unsigned rest = frac & mask;
+    unsigned newFrac = frac & ~mask;
+    unsigned lsb = (e == 0) ? 1u : ((frac >> (23 - e)) & 1u);
+    if ((rest > half) || (rest == half && lsb)) {
+        newFrac += (1u << shift);
+    }
+    if (newFrac >= (1u << 23)) { newFrac = 0; exp++; }
+    return sign | (exp << 23) | newFrac;
 }
 
 // P17
-/*
- * float_i2f - Return bit-level equivalent of expression (float) x.
- *   Result is returned as unsigned int, but
- *   it is to be interpreted as the bit-level representation of a
- *   single-precision floating point values.
- *   Legal ops: Any integer / unsigned operations incl. ||, &&. also if, while
- *   Max ops: 40
- *   Rating: 10
- */
 unsigned float_i2f(int x) {
-  return 17;
+    if (x == 0) return 0u;
+    if (x == 0x80000000) return 0xCF000000u;
+    unsigned sign = x & 0x80000000u;
+    unsigned v;
+    if (x < 0) v = -x; else v = x;
+    int e = 0;
+    while ((v & 0x80000000u) == 0) { v <<= 1; e--; }
+    e += 31;
+    unsigned frac = (v >> 8) & 0x7FFFFFu;
+    unsigned rest = v & 0xFFu;
+    if ((rest > 0x80u) || (rest == 0x80u && (frac & 1u))) {
+        frac++;
+        if (frac >= 0x800000u) { frac = 0; e++; }
+    }
+    return sign | ((e + 127) << 23) | frac;
 }
 
-
-
 // P18
-/*
- * bitCount - return count of number of 1's in the binary representation of x
- *   Examples: bitCount(5) = 2, bitCount(7) = 3
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 40
- *   Rating: 10
- */
 int bitCount(int x) {
-  return 18;
+    int m1 = 0x55;
+    int m2 = 0x33;
+    int m3 = 0x0F;
+    m1 = m1 | (m1 << 8);
+    m1 = m1 | (m1 << 16);      /* 0x55555555 */
+    m2 = m2 | (m2 << 8);
+    m2 = m2 | (m2 << 16);      /* 0x33333333 */
+    m3 = m3 | (m3 << 8);
+    m3 = m3 | (m3 << 16);      /* 0x0F0F0F0F */
+    x = (x & m1) + ((x >> 1) & m1);
+    x = (x & m2) + ((x >> 2) & m2);
+    x = (x & m3) + ((x >> 4) & m3);
+    x = x + (x >> 8);
+    x = x + (x >> 16);
+    return x & 0x3F;
 }
 
 // P19
-/*
- * bitReverse - Reverse bits in an 32-bit integer
- *   Examples: bitReverse(0x80000004) = 0x20000001
- *             bitReverse(0x7FFFFFFF) = 0xFFFFFFFE
- *   Legal ops: ! ~ & ^ | + << >>
- *   Max ops: 34
- *   Rating: 10
- */
-int bitReverse(int x)
-{
-  return 19;
+int bitReverse(int x) {
+    int m1 = 0x55 | (0x55 << 8); m1 = m1 | (m1 << 16);
+    int m2 = 0x33 | (0x33 << 8); m2 = m2 | (m2 << 16);
+    int m4 = 0x0F | (0x0F << 8); m4 = m4 | (m4 << 16);
+    int m8 = 0xFF | (0xFF << 16);
+    int m8b = m8 << 8;
+    int m16 = 0xFF | (0xFF << 8);
+    int m16b = m16 << 16;
+    x = ((x >> 1) & m1) | ((x & m1) << 1);
+    x = ((x >> 2) & m2) | ((x & m2) << 2);
+    x = ((x >> 4) & m4) | ((x & m4) << 4);
+    x = ((x >> 8) & m8) | ((x << 8) & m8b);
+    x = ((x >> 16) & m16) | ((x << 16) & m16b);
+    return x;
 }
+
+
